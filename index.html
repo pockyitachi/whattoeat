@@ -1,13 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>吃什么转盘</title>
-  <link rel="manifest" href="manifest.json">
+  <title>今天吃什么？</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC&display=swap');
-
     body {
       font-family: 'Noto Sans SC', sans-serif;
       background: #fffaf0;
@@ -15,143 +13,93 @@
       text-align: center;
       padding: 1rem;
     }
-
-    h1 {
-      font-size: 2.2rem;
-      margin-bottom: 1rem;
-    }
-
-    select, input, button, textarea {
+    input, button, select, textarea {
       margin: 0.5rem;
       padding: 0.5rem;
       font-size: 1rem;
       border-radius: 8px;
       border: 1px solid #ccc;
-      font-family: 'Noto Sans SC', sans-serif;
     }
-
     button {
       background-color: #ffcc66;
       border: none;
       cursor: pointer;
-      transition: background-color 0.3s ease;
     }
-
     button:hover {
       background-color: #ffb84d;
     }
-
     #wheelCanvas {
       margin: 1rem auto;
       display: block;
       border: 6px solid #555;
       border-radius: 50%;
     }
-
-    #pointer {
-      width: 40px;
-      height: 40px;
-      margin: 0 auto;
-    }
-
-    #pointer svg {
-      transform: rotate(180deg);
-      fill: red;
-    }
-
-    #resultDisplay {
-      font-size: 1.4rem;
-      margin-top: 1rem;
-      font-weight: bold;
-    }
-
-    #history {
-      margin-top: 1.5rem;
-      font-size: 0.9rem;
-      color: #555;
-    }
   </style>
 </head>
 <body>
-  <h1>今天吃什么？🎡</h1>
-
-  <div>
-    <label for="category">选择分类：</label>
-    <select id="category">
-      <option value="company">在公司吃什么</option>
-      <option value="home">在家吃什么</option>
-      <option value="dessert">甜点吃什么</option>
-      <option value="custom">自定义输入</option>
-    </select>
-  </div>
+  <h1>🎡 今天吃什么？</h1>
+  <select id="category">
+    <option value="company">在公司吃什么</option>
+    <option value="home">在家吃什么</option>
+    <option value="dessert">甜点吃什么</option>
+    <option value="cook">今天做什么饭</option>
+    <option value="custom">自定义输入</option>
+  </select><br>
 
   <div id="customInput" style="display:none">
-    <label>请输入选项（用中文逗号分隔）：</label><br>
-    <textarea id="customText" rows="3" cols="40"></textarea>
+    <textarea id="customText" rows="2" cols="40" placeholder="用中文逗号分隔：炸鸡，汉堡..."></textarea><br>
   </div>
 
-  <canvas id="wheelCanvas" width="300" height="300"></canvas>
-  <div id="pointer">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2L4 20h16L12 2z"/></svg>
-  </div>
-
+  <canvas id="wheelCanvas" width="300" height="300"></canvas><br>
   <button onclick="spinWheel()">开始转！</button>
   <button onclick="spinAnother()">换一个</button>
-
   <div id="resultDisplay"></div>
-  <div id="history"><strong>历史记录：</strong><span id="historyList"></span></div>
+
+  <hr style="margin: 2rem 0;">
+
+  <h2>🍳 根据冰箱食材生成菜谱</h2>
+  <input id="ingredientsInput" type="text" placeholder="例如：鸡蛋，西红柿，米饭" size="40"><br>
+  <button onclick="generateRecipe()">生成推荐</button>
+  <div id="recipeResult" style="margin-top:1rem; font-weight:bold;"></div>
 
   <script>
     const menus = {
       company: ["炸鸡", "bowl", "白人饭", "sandwich", "sushi"],
       home: ["炒粉炒面", "湖南小炒", "四川小炒", "米粉米线", "烧烤", "韩餐", "pho", "炸鸡汉堡", "salad", "粥", "煲仔饭", "麻辣烫", "自己动手吧"],
-      dessert: ["喜茶", "星巴克", "小蛋糕", "杨枝甘露", "奶茶", "水果捞"]
+      dessert: ["喜茶", "星巴克", "小蛋糕", "杨枝甘露", "奶茶", "水果捞"],
+      cook: ["番茄炒蛋", "红烧鸡翅", "酸辣土豆丝", "青椒肉丝", "玉米炒虾仁", "西红柿牛腩"]
     };
-
     const canvas = document.getElementById("wheelCanvas");
     const ctx = canvas.getContext("2d");
     const categorySelect = document.getElementById('category');
     const customInput = document.getElementById('customInput');
     const customText = document.getElementById('customText');
     const resultDisplay = document.getElementById('resultDisplay');
-    const historyList = document.getElementById('historyList');
 
     let currentOptions = [];
     let currentAngle = 0;
-    let lastResultIndex = 0;
-    let history = [];
-
-    const COLORS = ["#FFB6C1", "#ADD8E6", "#90EE90", "#FFD700", "#FFA07A", "#DDA0DD", "#F4A460", "#20B2AA"];
 
     categorySelect.addEventListener('change', () => {
-      if (categorySelect.value === 'custom') {
-        customInput.style.display = 'block';
-      } else {
-        customInput.style.display = 'none';
-      }
+      customInput.style.display = (categorySelect.value === 'custom') ? 'block' : 'none';
     });
 
     function drawWheel(options) {
       const total = options.length;
       const angle = (2 * Math.PI) / total;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       for (let i = 0; i < total; i++) {
         ctx.beginPath();
-        ctx.fillStyle = COLORS[i % COLORS.length];
+        ctx.fillStyle = ["#FFB6C1", "#ADD8E6", "#90EE90", "#FFD700", "#FFA07A"][i % 5];
         ctx.moveTo(150, 150);
         ctx.arc(150, 150, 150, i * angle, (i + 1) * angle);
         ctx.lineTo(150, 150);
         ctx.fill();
-        ctx.strokeStyle = "#333";
-        ctx.stroke();
-
         ctx.save();
         ctx.translate(150, 150);
         ctx.rotate(i * angle + angle / 2);
         ctx.textAlign = "right";
         ctx.fillStyle = "#000";
-        ctx.font = "14px 'Noto Sans SC'";
+        ctx.font = "14px sans-serif";
         ctx.fillText(options[i], 130, 5);
         ctx.restore();
       }
@@ -160,13 +108,11 @@
     function spinWheel() {
       if (categorySelect.value === 'custom') {
         const text = customText.value.trim();
-        if (!text) return alert("请输入选项，用中文逗号分隔");
+        if (!text) return alert("请输入自定义内容");
         currentOptions = text.split('，');
-        localStorage.setItem('lastCustomMenu', text);
       } else {
         currentOptions = menus[categorySelect.value];
       }
-      if (!currentOptions || currentOptions.length === 0) return;
       drawWheel(currentOptions);
       spinAnimation();
     }
@@ -177,52 +123,43 @@
     }
 
     function spinAnimation() {
-      const spins = Math.floor(Math.random() * 4 + 5);
       const anglePerSlice = 360 / currentOptions.length;
       const stopIndex = Math.floor(Math.random() * currentOptions.length);
       const stopAngle = stopIndex * anglePerSlice;
-      const targetAngle = 360 * spins + (360 - stopAngle - anglePerSlice / 2);
-
+      const targetAngle = 360 * 5 + (360 - stopAngle - anglePerSlice / 2);
       let start = null;
       const duration = 2000;
       function animate(timestamp) {
         if (!start) start = timestamp;
         const progress = timestamp - start;
-        const easedProgress = easeOutCubic(progress / duration);
-        currentAngle = easedProgress * targetAngle;
+        const eased = 1 - Math.pow(1 - progress / duration, 3);
+        currentAngle = eased * targetAngle;
         canvas.style.transform = `rotate(${currentAngle}deg)`;
         if (progress < duration) {
           requestAnimationFrame(animate);
         } else {
-          lastResultIndex = stopIndex;
-          const result = currentOptions[lastResultIndex];
-          resultDisplay.innerText = `🎯 今天吃：${result}`;
-          updateHistory(result);
+          resultDisplay.innerText = `🎯 今天吃：${currentOptions[stopIndex]}`;
         }
       }
       requestAnimationFrame(animate);
     }
 
-    function updateHistory(result) {
-      history.unshift(result);
-      if (history.length > 5) history.pop();
-      historyList.innerText = history.join("，");
-    }
-
-    function easeOutCubic(t) {
-      return 1 - Math.pow(1 - t, 3);
-    }
-
-    window.onload = () => {
-      const last = localStorage.getItem('lastCustomMenu');
-      if (last) {
-        customText.value = last;
-      }
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(reg => console.log('SW registered:', reg))
-          .catch(err => console.log('SW registration failed:', err));
-      }
+    function generateRecipe() {
+      const ingredients = document.getElementById("ingredientsInput").value.trim();
+      if (!ingredients) return alert("请输入食材");
+      document.getElementById("recipeResult").innerText = "生成中...";
+      fetch("https://your-vercel-project.vercel.app/api/recipe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ingredients })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("recipeResult").innerText = data.reply || "未生成菜谱";
+      })
+      .catch(err => {
+        document.getElementById("recipeResult").innerText = "❌ 请求失败";
+      });
     }
   </script>
 </body>
