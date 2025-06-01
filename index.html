@@ -148,21 +148,32 @@
 
     function generateRecipe() {
       const ingredients = document.getElementById("ingredientsInput").value.trim();
+      const resultBox = document.getElementById("recipeResult");
       if (!ingredients) return alert("请输入食材");
-      document.getElementById("recipeResult").innerText = "生成中...";
+
+      resultBox.innerText = "生成中...";
+
       fetch("/api/recipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ingredients })
       })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("recipeResult").innerText = data.reply || "未生成菜谱";
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        console.log("🧪 前端拿到数据:", data);
+        if (data.reply) {
+          resultBox.innerText = data.reply;
+        } else {
+          resultBox.innerText = "❌ 无菜谱内容";
+        }
       })
       .catch(err => {
-        document.getElementById("recipeResult").innerText = "❌ 请求失败";
+        console.error("❌ fetch 出错:", err);
+        resultBox.innerText = "❌ 请求失败，请检查网络或重新生成";
       });
     }
+
   </script>
 </body>
 </html>
