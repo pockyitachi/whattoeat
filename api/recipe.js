@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "openchat/openchat-3.5",
+        model: "deepseek/deepseek-r1-0528:free",
         messages: [
           { role: "system", content: "你是一个家庭厨师助手，会根据食材给出菜谱推荐。" },
           { role: "user", content: prompt }
