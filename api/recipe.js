@@ -1,4 +1,3 @@
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Only POST method is supported' });
@@ -29,10 +28,20 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || "生成失败";
+    console.log("🔍 OpenRouter API response:", JSON.stringify(data));
+
+    let reply = "生成失败";
+    if (data.choices && data.choices.length > 0 && data.choices[0].message?.content) {
+      reply = data.choices[0].message.content;
+    } else if (data.message) {
+      reply = data.message;
+    } else if (typeof data === "string") {
+      reply = data;
+    }
 
     return res.status(200).json({ reply });
   } catch (error) {
+    console.error("❌ Error during recipe generation:", error);
     return res.status(500).json({ error: '请求失败', detail: error.message });
   }
 }
