@@ -148,7 +148,7 @@
       const ingredients = document.getElementById("ingredientsInput").value.trim();
       if (!ingredients) return alert("请输入食材");
       document.getElementById("recipeResult").innerText = "生成中...";
-      fetch("https://your-vercel-project.vercel.app/api/recipe", {
+      fetch("/api/recipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ingredients })
