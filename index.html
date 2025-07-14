@@ -86,6 +86,9 @@
     }
 
     #wheelCanvas {
+      width: 80vw;
+      max-width: 320px;
+      height: auto;
       margin: 1rem auto;
       display: block;
       border: 6px solid #555;
@@ -179,29 +182,31 @@
     const total = options.length;
     const angle = (2 * Math.PI) / total;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = 300 * dpr;
-    canvas.height = 300 * dpr;
+    const size = canvas.offsetWidth;
+
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, 300, 300);
+    ctx.clearRect(0, 0, size, size);
 
     const COLORS = ["#f6c90e", "#eb596e", "#6a67ce", "#f79d65", "#4ecdc4", "#ff6b6b", "#48bfe3", "#9d4edd"];
     for (let i = 0; i < total; i++) {
       ctx.beginPath();
       ctx.fillStyle = COLORS[i % COLORS.length];
-      ctx.moveTo(150, 150);
-      ctx.arc(150, 150, 150, i * angle, (i + 1) * angle);
-      ctx.lineTo(150, 150);
+      ctx.moveTo(size/2, size/2);
+      ctx.arc(size/2, size/2, size/2, i * angle, (i + 1) * angle);
+      ctx.lineTo(size/2, size/2);
       ctx.fill();
 
       ctx.save();
-      ctx.translate(150, 150);
+      ctx.translate(size/2, size/2);
       ctx.rotate(i * angle + angle / 2);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#fff";
-      ctx.font = "16px 'Noto Sans SC', sans-serif";
-      ctx.fillText(options[i], 90, 0);
+      ctx.font = `${Math.max(14, size / 20)}px 'Noto Sans SC', sans-serif`;
+      ctx.fillText(options[i], size/2 - size * 0.15, 0);
       ctx.restore();
     }
   }
