@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>吃什么呢大转盘</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="eat-wheel-icon.png" type="image/png">
@@ -15,26 +14,105 @@
       text-align: center;
       padding: 1rem;
     }
-    input, button, select, textarea {
-      margin: 0.5rem;
-      padding: 0.5rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+
+    h1 {
+      font-size: 2.5rem;
+      letter-spacing: 1px;
+      margin-bottom: 1rem;
     }
+
+    h2 {
+      font-size: 1.6rem;
+      margin-top: 2rem;
+    }
+
+    input, button, textarea {
+      margin: 0.5rem;
+      padding: 0.6rem;
+      font-size: 1rem;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      font-family: 'Noto Sans SC', sans-serif;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
     button {
       background-color: #ffcc66;
       border: none;
       cursor: pointer;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.2s ease;
     }
+
     button:hover {
       background-color: #ffb84d;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
     }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    select {
+      margin: 0.5rem;
+      padding: 0.6rem;
+      padding-right: 2.2rem; /* 让文字和下拉箭头不挤 */
+      font-size: 1rem;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      font-family: 'Noto Sans SC', sans-serif;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="14" viewBox="0 0 24 24" width="14" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+      background-size: 1rem;
+    }
+
+    select:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #ffb84d;
+      box-shadow: 0 0 0 3px rgba(255,184,77,0.3);
+    }
+
     #wheelCanvas {
       margin: 1rem auto;
       display: block;
       border: 6px solid #555;
       border-radius: 50%;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+
+    #resultDisplay-wrapper {
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    #resultDisplay {
+      display: inline-block;
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #eb596e;
+      background: #fff3f3;
+      padding: 0.6rem 1rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    #resultDisplay:empty {
+      background: transparent;
+      box-shadow: none;
+      padding: 0;
     }
   </style>
 </head>
@@ -42,7 +120,8 @@
   <h1>🎡 今天吃什么？</h1>
   <select id="category">
     <option value="company">在公司吃什么</option>
-    <option value="home">在家吃什么</option>
+    <option value="home">点什么外卖呢</option>
+    <option value="quickhome">懒人速食选什么</option>
     <option value="dessert">甜点吃什么</option>
     <option value="cook">今天做什么饭</option>
     <option value="custom">自定义输入</option>
@@ -55,7 +134,10 @@
   <canvas id="wheelCanvas" width="300" height="300"></canvas><br>
   <button onclick="spinWheel()">开始转！</button>
   <button onclick="spinAnother()">换一个</button>
-  <div id="resultDisplay"></div>
+
+  <div id="resultDisplay-wrapper">
+    <div id="resultDisplay"></div>
+  </div>
 
   <hr style="margin: 2rem 0;">
 
@@ -64,116 +146,142 @@
   <button onclick="generateRecipe()">生成推荐</button>
   <div id="recipeResult" style="margin-top:1rem; font-weight:bold;"></div>
 
-  <script>
-    const menus = {
-      company: ["炸鸡", "bowl", "白人饭", "sandwich", "sushi"],
-      home: ["炒粉炒面", "湖南小炒", "四川小炒", "米粉米线", "烧烤", "韩餐", "pho", "炸鸡汉堡", "salad", "粥", "煲仔饭", "麻辣烫", "自己动手吧"],
-      dessert: ["喜茶", "星巴克", "小蛋糕", "杨枝甘露", "奶茶", "水果捞"],
-      cook: ["番茄炒蛋", "红烧鸡翅", "酸辣土豆丝", "青椒肉丝", "玉米炒虾仁", "西红柿牛腩"]
-    };
-    const canvas = document.getElementById("wheelCanvas");
-    const ctx = canvas.getContext("2d");
-    const categorySelect = document.getElementById('category');
-    const customInput = document.getElementById('customInput');
-    const customText = document.getElementById('customText');
-    const resultDisplay = document.getElementById('resultDisplay');
+<script>
+  const menus = {
+    company: ["炸鸡", "bowl", "白人饭", "sandwich", "sushi", "麦当当"],
+    home: ["炒粉炒面", "湖南小炒", "四川小炒", "米粉米线", "烧烤", "韩餐", "pho", "炸鸡汉堡", "salad", "粥", "煲仔饭", "麻辣烫", "自己动手吧"],
+    quickhome: ["泡面", "螺蛳粉", "速冻饺子", "煮米线", "手抓饼"],
+    dessert: ["喜茶", "星巴克", "小蛋糕", "杨枝甘露", "奶茶", "水果捞"],
+    cook: ["番茄炒蛋", "蒸鸡蛋", "西葫芦炒牛肉", "番茄肉沫豆腐", "海南鸡", "西红柿牛腩", "红烧鸡肉", "豆腐虾仁汤", "青椒牛肉", "黑椒牛肉蘑菇", "牛肉don", "咖喱"]
+  };
 
-    let currentOptions = [];
-    let currentAngle = 0;
+  const canvas = document.getElementById("wheelCanvas");
+  const ctx = canvas.getContext("2d");
+  const categorySelect = document.getElementById('category');
+  const customInput = document.getElementById('customInput');
+  const customText = document.getElementById('customText');
+  const resultDisplay = document.getElementById('resultDisplay');
 
-    categorySelect.addEventListener('change', () => {
-      customInput.style.display = (categorySelect.value === 'custom') ? 'block' : 'none';
-    });
+  let currentOptions = [];
+  let currentAngle = 0;
 
-    function drawWheel(options) {
-      const total = options.length;
-      const angle = (2 * Math.PI) / total;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < total; i++) {
-        ctx.beginPath();
-        ctx.fillStyle = ["#FFB6C1", "#ADD8E6", "#90EE90", "#FFD700", "#FFA07A"][i % 5];
-        ctx.moveTo(150, 150);
-        ctx.arc(150, 150, 150, i * angle, (i + 1) * angle);
-        ctx.lineTo(150, 150);
-        ctx.fill();
-        ctx.save();
-        ctx.translate(150, 150);
-        ctx.rotate(i * angle + angle / 2);
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#000";
-        ctx.font = "14px sans-serif";
-        ctx.fillText(options[i], 130, 5);
-        ctx.restore();
-      }
-    }
-
-    function spinWheel() {
-      if (categorySelect.value === 'custom') {
-        const text = customText.value.trim();
-        if (!text) return alert("请输入自定义内容");
-        currentOptions = text.split('，');
-      } else {
-        currentOptions = menus[categorySelect.value];
-      }
+  categorySelect.addEventListener('change', () => {
+    customInput.style.display = (categorySelect.value === 'custom') ? 'block' : 'none';
+    if (categorySelect.value !== 'custom') {
+      currentOptions = menus[categorySelect.value];
       drawWheel(currentOptions);
-      spinAnimation();
     }
+    resultDisplay.innerText = "";
+    resultDisplay.style.background = "transparent";
+  });
 
-    function spinAnother() {
-      if (!currentOptions || currentOptions.length === 0) return;
-      spinAnimation();
+  function drawWheel(options) {
+    const total = options.length;
+    const angle = (2 * Math.PI) / total;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = 300 * dpr;
+    canvas.height = 300 * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, 300, 300);
+
+    const COLORS = ["#f6c90e", "#eb596e", "#6a67ce", "#f79d65", "#4ecdc4", "#ff6b6b", "#48bfe3", "#9d4edd"];
+    for (let i = 0; i < total; i++) {
+      ctx.beginPath();
+      ctx.fillStyle = COLORS[i % COLORS.length];
+      ctx.moveTo(150, 150);
+      ctx.arc(150, 150, 150, i * angle, (i + 1) * angle);
+      ctx.lineTo(150, 150);
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(150, 150);
+      ctx.rotate(i * angle + angle / 2);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff";
+      ctx.font = "16px 'Noto Sans SC', sans-serif";
+      ctx.fillText(options[i], 90, 0);
+      ctx.restore();
     }
+  }
 
-    function spinAnimation() {
-      const anglePerSlice = 360 / currentOptions.length;
-      const stopIndex = Math.floor(Math.random() * currentOptions.length);
-      const stopAngle = stopIndex * anglePerSlice;
-      const targetAngle = 360 * 5 + (360 - stopAngle - anglePerSlice / 2);
-      let start = null;
-      const duration = 2000;
-      function animate(timestamp) {
-        if (!start) start = timestamp;
-        const progress = timestamp - start;
-        const eased = 1 - Math.pow(1 - progress / duration, 3);
-        currentAngle = eased * targetAngle;
-        canvas.style.transform = `rotate(${currentAngle}deg)`;
-        if (progress < duration) {
-          requestAnimationFrame(animate);
-        } else {
-          resultDisplay.innerText = `🎯 今天吃：${currentOptions[stopIndex]}`;
-        }
+  function spinWheel() {
+    if (categorySelect.value === 'custom') {
+      const text = customText.value.trim();
+      if (!text) return alert("请输入自定义内容");
+      currentOptions = text.split('，');
+    } else {
+      currentOptions = menus[categorySelect.value];
+    }
+    drawWheel(currentOptions);
+    spinAnimation();
+  }
+
+  function spinAnother() {
+    if (!currentOptions || currentOptions.length === 0) return;
+    spinAnimation();
+  }
+
+  function spinAnimation() {
+    const anglePerSlice = 360 / currentOptions.length;
+    const stopIndex = Math.floor(Math.random() * currentOptions.length);
+    const stopAngle = stopIndex * anglePerSlice;
+    const targetAngle = 360 * 5 + (360 - stopAngle - anglePerSlice / 2);
+    let start = null;
+    const duration = 2000;
+    function animate(timestamp) {
+      if (!start) start = timestamp;
+      const progress = timestamp - start;
+      const eased = 1 - Math.pow(1 - progress / duration, 3);
+      currentAngle = eased * targetAngle;
+      canvas.style.transform = `rotate(${currentAngle}deg)`;
+      if (progress < duration) {
+        requestAnimationFrame(animate);
+      } else {
+        resultDisplay.innerText = `🎯 今天吃：${currentOptions[stopIndex]}`;
+        resultDisplay.style.background = "#fff3f3";
       }
-      requestAnimationFrame(animate);
     }
+    requestAnimationFrame(animate);
+  }
 
-    function generateRecipe() {
-      const ingredients = document.getElementById("ingredientsInput").value.trim();
-      const resultBox = document.getElementById("recipeResult");
-      if (!ingredients) return alert("请输入食材");
+  function generateRecipe() {
+    const ingredients = document.getElementById("ingredientsInput").value.trim();
+    const resultBox = document.getElementById("recipeResult");
+    if (!ingredients) return alert("请输入食材");
 
-      resultBox.innerText = "生成中...";
+    resultBox.innerText = "生成中...";
 
-      fetch("/api/recipe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ingredients })
-      })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        console.log("🧪 前端拿到数据:", data);
-        if (data.reply) {
-          resultBox.innerText = data.reply;
-        } else {
-          resultBox.innerText = "❌ 无菜谱内容";
-        }
-      })
-      .catch(err => {
-        console.error("❌ fetch 出错:", err);
-        resultBox.innerText = "❌ 请求失败，请检查网络或重新生成";
-      });
-    }
+    fetch("/api/recipe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ingredients })
+    })
+    .then(async (res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      console.log("🧪 前端拿到数据:", data);
+      if (data.reply) {
+        resultBox.innerText = data.reply;
+        resultBox.style.background = "#fff3f3";
+      } else {
+        resultBox.innerText = "❌ 无菜谱内容";
+        resultBox.style.background = "transparent";
+      }
+    })
+    .catch(err => {
+      console.error("❌ fetch 出错:", err);
+      resultBox.innerText = "❌ 请求失败，请检查网络或重新生成";
+      resultBox.style.background = "transparent";
+    });
+  }
 
-  </script>
+  window.onload = () => {
+    currentOptions = menus["company"]; 
+    drawWheel(currentOptions);
+    resultDisplay.style.background = "transparent";
+  }
+</script>
 </body>
 </html>
